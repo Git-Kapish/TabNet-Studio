@@ -1,0 +1,26 @@
+{
+    "run_name": "benchmark_tabnet_run",
+    "hyperparameters": {
+        "lambda_sparse": 0.0001,
+        "max_epochs": 15,
+        "patience": 15,
+        "clip_value": 2.0,
+        "seed": 42,
+        "deterministic": true,
+        "optimizer": "Adam",
+        "initial_lr": 0.02
+    },
+    "best_epoch": 12,
+    "best_val_loss": 0.34707221830253626,
+    "evaluation_metrics": {
+        "accuracy": 0.8414371993039206,
+        "precision": 0.7553763440860215,
+        "recall": 0.48679081853616285,
+        "f1": 0.5920463523834606
+    },
+    "training_duration_seconds": 31.86440134048462,
+    "timestamp": "2026-07-15 16:36:05",
+    "checkpoint_location": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\benchmark_tabnet_run_best_model.pt",
+    "tensorboard_log_location": "D:\\ML projects\\Tabnet implementation\\artifacts\\tensorboard\\benchmark_tabnet_run",
+    "project_version": "1.0"
+}

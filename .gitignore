@@ -1,0 +1,47 @@
+# Python virtual environments, compiled code, and caches
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.pytype/
+
+# Node.js dependencies and build targets
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Local configuration files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Large datasets, checkpoints, runs, and exports
+data/raw/uploaded/
+data/processed/
+backend/runs/
+tabnet/runs/
+*.pt
+*.pth
+*.pkl
+
+# IDEs, OS, and system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

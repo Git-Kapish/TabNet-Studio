@@ -1,0 +1,30 @@
+# forest_cover.yaml
+# Hyperparameters for Forest Cover Type (from page 9 of TabNet Paper)
+
+data:
+  dataset_name: "covertype"
+  train_path: "data/raw/covertype/covertype.csv"
+  target_col: "Cover_Type"
+  cat_cols: [] # Covertype features are treated as numerical / indicator columns
+  num_cols: [] # Inferred automatically
+
+model:
+  n_d: 64
+  n_a: 64
+  n_steps: 5
+  gamma: 1.5
+  n_shared: 2
+  n_dependent: 2
+  virtual_batch_size: 512
+  momentum: 0.3 # Equivalent to m_B = 0.7 in the paper (PyTorch uses 1 - m_B)
+
+training:
+  max_epochs: 100
+  batch_size: 16384
+  lambda_sparse: 0.0001
+  lr: 0.02
+  patience: 15
+  clip_value: 2.0
+  seed: 42
+  deterministic: true
+  device: "cpu"

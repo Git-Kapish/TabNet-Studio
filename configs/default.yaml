@@ -1,0 +1,30 @@
+# default.yaml
+# Default baseline configuration for TabNet Studio training
+
+data:
+  dataset_name: "default"
+  train_path: "data/raw/default/default.csv"
+  target_col: "target"
+  cat_cols: []
+  num_cols: []
+
+model:
+  n_d: 8
+  n_a: 8
+  n_steps: 5
+  gamma: 1.5
+  n_shared: 2
+  n_dependent: 2
+  virtual_batch_size: 128
+  momentum: 0.02
+
+training:
+  max_epochs: 50
+  batch_size: 256
+  lambda_sparse: 0.001
+  lr: 0.02
+  patience: 10
+  clip_value: 2.0
+  seed: 42
+  deterministic: false
+  device: "cpu"

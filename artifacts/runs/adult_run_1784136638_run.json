@@ -1,0 +1,32 @@
+{
+    "run_name": "adult_run_1784136638",
+    "hyperparameters": {
+        "lambda_sparse": 0.001,
+        "max_epochs": 1,
+        "patience": 2,
+        "clip_value": 2.0,
+        "seed": 42,
+        "deterministic": true,
+        "optimizer": "Adam",
+        "initial_lr": 0.02
+    },
+    "best_epoch": 1,
+    "best_val_loss": 0.40947201974939357,
+    "evaluation_metrics": {
+        "accuracy": 0.8067355921793428,
+        "precision": 0.5921225382932166,
+        "recall": 0.5859679514941533,
+        "f1": 0.5890291684806269
+    },
+    "training_duration_seconds": 11.466873407363892,
+    "timestamp": "2026-07-15 17:30:54",
+    "checkpoint_location": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\adult_run_1784136638_best_model.pt",
+    "tensorboard_log_location": "D:\\ML projects\\Tabnet implementation\\artifacts\\tensorboard\\adult_run_1784136638",
+    "project_version": "1.0",
+    "model_config": {
+        "n_d": 8,
+        "n_a": 8,
+        "n_steps": 3,
+        "gamma": 1.3
+    }
+}

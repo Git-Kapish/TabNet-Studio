@@ -1,0 +1,30 @@
+# experiment.yaml
+# Custom experiment configuration template for TabNet Studio
+
+data:
+  dataset_name: "custom_dataset"
+  train_path: "data/raw/custom/dataset.csv"
+  target_col: "target"
+  cat_cols: [] # Specify categorical column names here, or leave empty for auto-detection
+  num_cols: [] # Specify numerical column names here, or leave empty for auto-detection
+
+model:
+  n_d: 8              # Decision output dimension
+  n_a: 8              # Attentive feedback dimension
+  n_steps: 3          # Number of decision steps
+  gamma: 1.3          # Relaxation parameter (1.0 = enforce unique feature usage, higher = allow reuse)
+  n_shared: 2         # Shared feature transformer blocks
+  n_dependent: 2      # Step-dependent feature transformer blocks
+  virtual_batch_size: 128  # Virtual batch size for Ghost BatchNorm
+  momentum: 0.02      # BN momentum (1 - m_B)
+
+training:
+  max_epochs: 30
+  batch_size: 256
+  lambda_sparse: 0.001  # Sparsity coefficient
+  lr: 0.01
+  patience: 5         # Early stopping patience
+  clip_value: 2.0
+  seed: 42
+  deterministic: false
+  device: "cpu"       # Set to "cuda" if GPU is available

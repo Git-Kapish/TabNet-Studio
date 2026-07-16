@@ -1,0 +1,52 @@
+Metadata-Version: 2.4
+Name: tabnet
+Version: 1.0.0
+Summary: A standalone PyTorch implementation of the TabNet architecture
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=1.9.0
+Requires-Dist: numpy>=1.19.0
+Requires-Dist: pandas>=1.2.0
+Requires-Dist: scikit-learn>=0.24.0
+
+# TabNet Standalone Package
+
+This directory contains a standalone, reusable PyTorch implementation of the TabNet architecture based on the paper **"TabNet: Attentive Interpretable Tabular Learning"**.
+
+## Installation
+
+To install this package locally in editable mode, run:
+```bash
+pip install -e .
+```
+
+## Basic Usage
+
+```python
+import torch
+from tabnet import TabNetClassifier, Trainer
+
+# Initialize the classifier
+model = TabNetClassifier(
+    num_features=10,
+    num_classes=2,
+    cat_idxs=[0, 3],
+    cat_dims=[5, 10],
+    cat_emb_dims=[4, 8],
+    n_d=8,
+    n_a=8,
+    n_steps=3
+)
+
+# Run a forward pass
+x = torch.randn(16, 10)
+# Mock categorical values to be indices within limits
+x[:, 0] = torch.randint(0, 5, (16,)).float()
+x[:, 3] = torch.randint(0, 10, (16,)).float()
+
+logits, step_masks, decision_outputs = model(x)
+print("Logits shape:", logits.shape)  # torch.Size([16, 2])
+```

@@ -1,0 +1,45 @@
+# adult_income.yaml
+# Hyperparameters for Adult Census Income (from page 9 of TabNet Paper)
+
+data:
+  dataset_name: "adult"
+  train_path: "data/raw/adult/adult.csv"
+  target_col: "income"
+  # Categorical columns can be auto-detected or specified explicitly:
+  cat_cols:
+    - "workclass"
+    - "education"
+    - "marital-status"
+    - "occupation"
+    - "relationship"
+    - "race"
+    - "sex"
+    - "native-country"
+  num_cols:
+    - "age"
+    - "fnlwgt"
+    - "education-num"
+    - "capital-gain"
+    - "capital-loss"
+    - "hours-per-week"
+
+model:
+  n_d: 16
+  n_a: 16
+  n_steps: 5
+  gamma: 1.5
+  n_shared: 2
+  n_dependent: 2
+  virtual_batch_size: 128
+  momentum: 0.02 # Equivalent to m_B = 0.98 in the paper (PyTorch uses 1 - m_B)
+
+training:
+  max_epochs: 100
+  batch_size: 4096
+  lambda_sparse: 0.0001
+  lr: 0.02
+  patience: 15
+  clip_value: 2.0
+  seed: 42
+  deterministic: true
+  device: "cpu"

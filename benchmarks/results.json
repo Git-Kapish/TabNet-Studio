@@ -1,0 +1,54 @@
+{
+    "logistic_regression": {
+        "model_name": "Logistic Regression",
+        "metrics": {
+            "accuracy": 0.8494216398812571,
+            "precision": 0.7146516393442623,
+            "recall": 0.6041576440017323,
+            "f1": 0.6547758742079324
+        },
+        "training_time_seconds": 0.8572359085083008,
+        "inference_time_seconds": 0.0222780704498291,
+        "model_size_bytes": 8122,
+        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\logistic_regression.joblib"
+    },
+    "random_forest": {
+        "model_name": "Random Forest",
+        "metrics": {
+            "accuracy": 0.8555635172484389,
+            "precision": 0.7307297019527236,
+            "recall": 0.6158510177566046,
+            "f1": 0.6683901292596944
+        },
+        "training_time_seconds": 0.7164323329925537,
+        "inference_time_seconds": 0.0687723159790039,
+        "model_size_bytes": 91442731,
+        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\random_forest.joblib"
+    },
+    "xgboost": {
+        "model_name": "XGBoost",
+        "metrics": {
+            "accuracy": 0.8716347630258983,
+            "precision": 0.7602368031573754,
+            "recall": 0.6673884798614119,
+            "f1": 0.7107933579335793
+        },
+        "training_time_seconds": 0.32911157608032227,
+        "inference_time_seconds": 0.024209260940551758,
+        "model_size_bytes": 325965,
+        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\xgboost.joblib"
+    },
+    "tabnet": {
+        "model_name": "TabNet",
+        "metrics": {
+            "accuracy": 0.8414371993039206,
+            "precision": 0.7553763440860215,
+            "recall": 0.48679081853616285,
+            "f1": 0.5920463523834606
+        },
+        "training_time_seconds": 31.86440134048462,
+        "inference_time_seconds": 0.15144968032836914,
+        "model_size_bytes": 532419,
+        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\benchmark_tabnet_run_best_model.pt"
+    }
+}
