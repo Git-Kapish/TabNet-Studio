@@ -78,7 +78,7 @@ export default function App(): React.JSX.Element {
   }>({ online: false });
 
   useEffect(() => {
-    const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+    const API_BASE = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:8000`;
     fetch(`${API_BASE}/api/status`)
       .then((r) => r.json())
       .then((d) =>

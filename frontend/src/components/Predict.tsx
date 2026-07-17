@@ -13,7 +13,7 @@ interface ModelRun {
   run_name: string;
 }
 
-const API_BASE = `http://${window.location.hostname}:8000`;
+const API_BASE = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:8000`;
 
 interface PredictResult {
   predictions: string[];
