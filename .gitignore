@@ -12,6 +12,9 @@ __pycache__/
 .ipynb_checkpoints/
 .pytype/
 
+# Editable install metadata
+tabnet/tabnet.egg-info/
+
 # Node.js dependencies and build targets
 node_modules/
 frontend/node_modules/
@@ -30,14 +33,31 @@ yarn-error.log*
 .env.production.local
 *.env
 
-# Large datasets, checkpoints, runs, and exports
+# Large datasets, model checkpoints, training runs, and TensorBoard logs
 data/raw/uploaded/
 data/processed/
-backend/runs/
-tabnet/runs/
+artifacts/checkpoints/
+artifacts/runs/
+artifacts/tensorboard/
+
+# Test artifact directories created during development
+artifacts/checkpoints_test/
+artifacts/runs_test/
+artifacts/tensorboard_test/
+
+# Benchmark outputs (generated, not source)
+benchmarks/*.json
+
+# PyTorch model weights and serialised objects
 *.pt
 *.pth
 *.pkl
+
+# Research paper PDF (large binary)
+*.pdf
+
+# UCI/external dataset CSVs placed at the project root
+poker-hand-*.csv
 
 # IDEs, OS, and system files
 .vscode/

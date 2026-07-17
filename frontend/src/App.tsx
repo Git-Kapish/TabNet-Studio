@@ -9,7 +9,6 @@ import {
   Sun,
   Moon,
   ExternalLink,
-  Activity,
 } from 'lucide-react';
 
 import Home from './components/Home';
@@ -71,6 +70,28 @@ export default function App(): React.JSX.Element {
 
   const meta = useMemo(() => PAGE_META[activeTab], [activeTab]);
 
+  const [backendStatus, setBackendStatus] = useState<{
+    online: boolean;
+    torch_version?: string;
+    device?: string;
+    cuda?: boolean;
+  }>({ online: false });
+
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+    fetch(`${API_BASE}/api/status`)
+      .then((r) => r.json())
+      .then((d) =>
+        setBackendStatus({
+          online: true,
+          torch_version: d.torch_version,
+          device: d.device,
+          cuda: d.cuda,
+        })
+      )
+      .catch(() => setBackendStatus({ online: false }));
+  }, []);
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Primary navigation">
@@ -111,10 +132,24 @@ export default function App(): React.JSX.Element {
         </div>
 
         <div className="sidebar-footer mono">
-          <div>backend · {window.location.hostname}:8000</div>
-          <div style={{ marginTop: 2, opacity: 0.7 }}>
-            pytorch · 2.x · cpu
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span
+              style={{
+                display: 'inline-block',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: backendStatus.online ? 'var(--success)' : 'var(--destructive)',
+                flexShrink: 0,
+              }}
+            />
+            backend · {backendStatus.online ? 'connected' : 'offline'}
           </div>
+          {backendStatus.online && (
+            <div style={{ marginTop: 2, opacity: 0.7 }}>
+              pytorch · {backendStatus.torch_version?.split('+')[0] ?? '—'} · {backendStatus.cuda ? backendStatus.device : 'cpu'}
+            </div>
+          )}
         </div>
       </aside>
 
@@ -131,18 +166,12 @@ export default function App(): React.JSX.Element {
             </span>
           </div>
           <div className="topbar-right">
-            <div className="topbar-meta">
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Activity size={12} />
-                <span>idle</span>
-              </span>
-            </div>
             <a
               className="icon-btn"
-              href="https://github.com/google-research/google-research/tree/master/tabnet"
+              href="https://github.com/Git-Kapish/TabNet-Studio"
               target="_blank"
               rel="noreferrer"
-              aria-label="Open upstream TabNet repository"
+              aria-label="Open TabNet Studio repository"
             >
               <ExternalLink size={15} strokeWidth={1.75} />
             </a>

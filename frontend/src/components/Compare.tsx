@@ -62,10 +62,13 @@ export default function Compare(): React.JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeMetric, setActiveMetric] = useState<MetricView>('performance');
+  const [hardwareData, setHardwareData] = useState<any>(null);
+  const [loadingHardware, setLoadingHardware] = useState<boolean>(true);
 
   const fetchBenchmarks = async () => {
     setLoading(true);
     setError(null);
+    setLoadingHardware(true);
     try {
       const response = await fetch(`${API_BASE}/api/benchmarks`);
       if (!response.ok) {
@@ -75,10 +78,21 @@ export default function Compare(): React.JSX.Element {
       }
       const json = (await response.json()) as BenchmarkData;
       setData(json);
+      
+      try {
+        const hwResponse = await fetch(`${API_BASE}/api/benchmark/hardware`);
+        if (hwResponse.ok) {
+          const hwJson = await hwResponse.json();
+          setHardwareData(hwJson);
+        }
+      } catch {
+        // fail silently
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
+      setLoadingHardware(false);
     }
   };
 
@@ -363,6 +377,100 @@ export default function Compare(): React.JSX.Element {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section className="card" aria-label="Hardware accelerator benchmark">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Hardware Accelerator Benchmark</div>
+              <div className="card-subtitle">
+                real-time PyTorch throughput (batch size 1024, 20 features, forward + backward pass)
+              </div>
+            </div>
+            {hardwareData && (
+              <span className={`badge ${hardwareData.cuda_available ? 'badge-completed' : 'badge-running'}`}>
+                {hardwareData.cuda_available ? 'CUDA Active' : 'CPU Only'}
+              </span>
+            )}
+          </div>
+          <div className="card-section">
+            {loadingHardware ? (
+              <div className="help mono" style={{ color: 'var(--muted-foreground)' }}>
+                Measuring hardware device speeds…
+              </div>
+            ) : hardwareData ? (
+              <div className="stack">
+                <div className="grid grid-cols-2">
+                  {/* CPU card */}
+                  <div className="card card-pad-sm stack-sm" style={{ backgroundColor: 'var(--muted)' }}>
+                    <div className="metric-label">CPU Execution</div>
+                    <div className="metric-value">
+                      {Math.round(hardwareData.cpu.throughput_samples_per_sec).toLocaleString()}
+                    </div>
+                    <div className="help mono">
+                      latency: {hardwareData.cpu.time_per_batch_ms.toFixed(1)} ms · {hardwareData.cpu.device_name}
+                    </div>
+                  </div>
+
+                  {/* GPU card */}
+                  <div className="card card-pad-sm stack-sm" style={{ backgroundColor: 'var(--muted)' }}>
+                    <div className="metric-label">GPU Execution (CUDA)</div>
+                    {hardwareData.cuda_available ? (
+                      <>
+                        <div className="metric-value" style={{ color: 'var(--success)' }}>
+                          {Math.round(hardwareData.gpu.throughput_samples_per_sec).toLocaleString()}
+                        </div>
+                        <div className="help mono">
+                          latency: {hardwareData.gpu.time_per_batch_ms.toFixed(1)} ms · {hardwareData.gpu.device_name}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="metric-value" style={{ color: 'var(--muted-foreground)' }}>
+                          N/A
+                        </div>
+                        <div className="help mono" style={{ color: 'var(--muted-foreground)' }}>
+                          CUDA Not Available / No GPU Detected
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {hardwareData.cuda_available && hardwareData.gpu.throughput_samples_per_sec > 0 && (
+                  <div className="callout callout-success" style={{ marginTop: 8 }}>
+                    <Zap size={14} style={{ color: 'var(--success)', marginTop: 2 }} />
+                    <div>
+                      <strong>
+                        {(hardwareData.gpu.throughput_samples_per_sec / hardwareData.cpu.throughput_samples_per_sec).toFixed(1)}x speedup
+                      </strong>{' '}
+                      achieved on {hardwareData.gpu.device_name} compared to CPU execution.
+                    </div>
+                  </div>
+                )}
+
+                {!hardwareData.cuda_available && (
+                  <div className="callout" style={{ marginTop: 8 }}>
+                    <ShieldAlert size={14} style={{ color: 'var(--primary)', marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      To enable GPU acceleration inside the Docker stack, install the{' '}
+                      <a
+                        href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: 'var(--primary)', textDecoration: 'underline' }}
+                      >
+                        Nvidia Container Toolkit
+                      </a>{' '}
+                      and ensure your host GPU drivers support CUDA.
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="help mono">Failed to query hardware stats from backend.</div>
+            )}
           </div>
         </section>
       </div>

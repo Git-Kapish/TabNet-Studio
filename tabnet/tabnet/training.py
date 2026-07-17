@@ -2,7 +2,7 @@ import os
 import json
 import time
 import random
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
@@ -86,6 +86,7 @@ class Trainer:
         
         best_val_loss = float("inf")
         epochs_no_improve = 0
+        early_stopping_triggered = False
         best_metrics: Dict[str, float] = {}
         
         start_time = time.time()
@@ -191,6 +192,7 @@ class Trainer:
                 epochs_no_improve += 1
                 if epochs_no_improve >= self.patience:
                     print(f"Early stopping triggered at epoch {epoch}. No validation loss improvement for {self.patience} epochs.")
+                    early_stopping_triggered = True
                     break
                     
         total_duration = time.time() - start_time
@@ -216,6 +218,8 @@ class Trainer:
             },
             "best_epoch": best_metrics.get("epoch"),
             "best_val_loss": best_metrics.get("val_loss"),
+            "early_stopping_triggered": early_stopping_triggered,
+            "stopped_epoch": epoch,
             "evaluation_metrics": {
                 "accuracy": best_metrics.get("accuracy"),
                 "precision": best_metrics.get("precision"),

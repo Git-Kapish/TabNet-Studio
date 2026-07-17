@@ -54,6 +54,20 @@ os.makedirs(RUNS_DIR, exist_ok=True)
 # In-memory progress tracking: run_name -> status dictionary
 training_status: Dict[str, Dict[str, Any]] = {}
 
+@app.get("/api/status")
+def api_status():
+    """
+    Return live runtime information: PyTorch version and CUDA device details.
+    """
+    cuda = torch.cuda.is_available()
+    device = torch.cuda.get_device_name(0) if cuda else "cpu"
+    return {
+        "status": "ok",
+        "torch_version": torch.__version__,
+        "cuda": cuda,
+        "device": device,
+    }
+
 class TrainRequest(BaseModel):
     dataset_name: str  # "adult", "covertype", or custom uploaded filename
     target_col: str
@@ -202,7 +216,11 @@ def train_tabnet_task(run_name: str, req: TrainRequest):
             "status": "completed",
             "val_loss": run_metadata["best_val_loss"],
             "accuracy": run_metadata["evaluation_metrics"]["accuracy"],
-            "f1": run_metadata["evaluation_metrics"]["f1"]
+            "f1": run_metadata["evaluation_metrics"]["f1"],
+            "early_stopping_triggered": run_metadata.get("early_stopping_triggered", False),
+            "stopped_epoch": run_metadata.get("stopped_epoch"),
+            "best_epoch": run_metadata.get("best_epoch"),
+            "patience": run_metadata["hyperparameters"]["patience"]
         })
         
     except Exception as e:
@@ -260,6 +278,10 @@ async def start_training(req: TrainRequest, background_tasks: BackgroundTasks):
         "accuracy": 0.0,
         "f1": 0.0,
         "lr": req.lr,
+        "early_stopping_triggered": False,
+        "stopped_epoch": None,
+        "best_epoch": None,
+        "patience": req.patience,
         "error": None
     }
     
@@ -503,4 +525,85 @@ async def get_feature_importance(run_name: str, num_samples: int = 5):
         "feature_names": preprocessor.feature_names,
         "global_importance": global_imp.tolist(),
         "samples": samples_list
+    }
+
+@app.get("/api/benchmark/hardware")
+async def benchmark_hardware():
+    """
+    Benchmark TabNet forward and backward pass speed on CPU vs GPU.
+    """
+    import time
+    
+    # 1. CPU Benchmarking
+    device_cpu = torch.device("cpu")
+    model_cpu = TabNetClassifier(num_features=20, num_classes=2, n_d=8, n_a=8, n_steps=3)
+    model_cpu.to(device_cpu)
+    
+    X_cpu = torch.randn(1024, 20, device=device_cpu)
+    y_cpu = torch.randint(0, 2, (1024,), device=device_cpu)
+    criterion = torch.nn.CrossEntropyLoss()
+    
+    # Warmup
+    for _ in range(2):
+        logits, _, _ = model_cpu(X_cpu)
+        loss = criterion(logits, y_cpu)
+        loss.backward()
+        
+    # Measure
+    start_cpu = time.time()
+    for _ in range(10):
+        logits, _, _ = model_cpu(X_cpu)
+        loss = criterion(logits, y_cpu)
+        loss.backward()
+    cpu_time = (time.time() - start_cpu) / 10.0
+    cpu_throughput = 1024 / cpu_time
+    
+    # 2. GPU Benchmarking
+    cuda_available = torch.cuda.is_available()
+    gpu_name = torch.cuda.get_device_name(0) if cuda_available else "N/A"
+    
+    gpu_time = 0.0
+    gpu_throughput = 0.0
+    
+    if cuda_available:
+        try:
+            device_gpu = torch.device("cuda")
+            model_gpu = TabNetClassifier(num_features=20, num_classes=2, n_d=8, n_a=8, n_steps=3)
+            model_gpu.to(device_gpu)
+            X_gpu = torch.randn(1024, 20, device=device_gpu)
+            y_gpu = torch.randint(0, 2, (1024,), device=device_gpu)
+            
+            # Warmup
+            for _ in range(2):
+                logits, _, _ = model_gpu(X_gpu)
+                loss = criterion(logits, y_gpu)
+                loss.backward()
+            torch.cuda.synchronize()
+            
+            # Measure
+            start_gpu = time.time()
+            for _ in range(10):
+                logits, _, _ = model_gpu(X_gpu)
+                loss = criterion(logits, y_gpu)
+                loss.backward()
+            torch.cuda.synchronize()
+            gpu_time = (time.time() - start_gpu) / 10.0
+            gpu_throughput = 1024 / gpu_time
+        except Exception:
+            cuda_available = False
+            gpu_name = "CUDA execution failed"
+            
+    return {
+        "cuda_available": cuda_available,
+        "gpu_name": gpu_name,
+        "cpu": {
+            "device_name": "CPU Host (Single Instance)",
+            "time_per_batch_ms": cpu_time * 1000.0,
+            "throughput_samples_per_sec": cpu_throughput
+        },
+        "gpu": {
+            "device_name": gpu_name,
+            "time_per_batch_ms": gpu_time * 1000.0,
+            "throughput_samples_per_sec": gpu_throughput
+        }
     }

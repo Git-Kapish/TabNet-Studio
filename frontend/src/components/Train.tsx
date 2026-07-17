@@ -83,6 +83,12 @@ export default function Train(): React.JSX.Element {
     val_loss: 0,
   });
 
+  // Early stopping states
+  const [earlyStoppingTriggered, setEarlyStoppingTriggered] = useState<boolean>(false);
+  const [bestEpoch, setBestEpoch] = useState<number | null>(null);
+  const [stoppedEpoch, setStoppedEpoch] = useState<number | null>(null);
+  const [patienceVal, setPatienceVal] = useState<number>(3);
+
   const pollIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -92,6 +98,10 @@ export default function Train(): React.JSX.Element {
     } else if (datasetName === 'covertype') {
       setTargetCol('Cover_Type');
       setRowCount(581012);
+    } else if (datasetName === 'custom') {
+      setTargetCol('—');
+      setRowCount(0);
+      setCustomColumns([]);
     }
   }, [datasetName]);
 
@@ -137,6 +147,9 @@ export default function Train(): React.JSX.Element {
     setProgress(0);
     setHistory([]);
     setLatestMetrics({ accuracy: 0, f1: 0, val_loss: 0 });
+    setEarlyStoppingTriggered(false);
+    setBestEpoch(null);
+    setStoppedEpoch(null);
 
     const payload = {
       dataset_name: datasetName,
@@ -182,6 +195,19 @@ export default function Train(): React.JSX.Element {
       const curEpoch = data.epoch || 0;
       setCurrentEpoch(curEpoch);
       setProgress(Math.min(100, Math.round((curEpoch / epochs) * 100)));
+      
+      if (data.early_stopping_triggered !== undefined) {
+        setEarlyStoppingTriggered(data.early_stopping_triggered);
+      }
+      if (data.best_epoch !== undefined) {
+        setBestEpoch(data.best_epoch);
+      }
+      if (data.stopped_epoch !== undefined) {
+        setStoppedEpoch(data.stopped_epoch);
+      }
+      if (data.patience !== undefined) {
+        setPatienceVal(data.patience);
+      }
       if (curEpoch > 0) {
         setLatestMetrics({
           accuracy: data.accuracy || 0,
@@ -268,17 +294,15 @@ export default function Train(): React.JSX.Element {
                       : 'custom'
                   }
                   onChange={(e) => {
-                    if (e.target.value !== 'custom') {
-                      setDatasetName(e.target.value);
-                    }
+                    setDatasetName(e.target.value);
                   }}
                   disabled={trainingActive}
                 >
                   <option value="adult">Adult Census Income · 48 842 rows</option>
                   <option value="covertype">Forest Cover Type · 581 012 rows</option>
-                  {!isCustom && (
-                    <option value="custom">Custom · {datasetName}</option>
-                  )}
+                  <option value="custom">
+                    {isCustom ? `Custom · ${datasetName}` : 'Custom'}
+                  </option>
                 </select>
               </div>
 
@@ -558,6 +582,14 @@ export default function Train(): React.JSX.Element {
                   <div className="progress">
                     <div className="progress-fill" style={{ width: `${progress}%` }} />
                   </div>
+                  {earlyStoppingTriggered && (
+                    <div style={{ marginTop: 10, fontSize: 12, color: 'var(--accent-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AlertTriangle size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                      <span>
+                        Halted at epoch <strong>{stoppedEpoch}</strong> (patience limit of {patienceVal} epochs hit). Best epoch was <strong>{bestEpoch}</strong>.
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {currentEpoch > 0 && (
@@ -573,8 +605,17 @@ export default function Train(): React.JSX.Element {
                     <CheckCircle size={16} strokeWidth={1.75} style={{ flexShrink: 0, marginTop: 1 }} />
                     <div>
                       <div className="callout-title">Training complete</div>
-                      Checkpoint saved to the model registry. Open the
-                      Architecture Explorer to read what the model learned.
+                      {earlyStoppingTriggered ? (
+                        <p style={{ marginTop: 2, fontSize: 13, color: 'var(--accent-foreground)' }}>
+                          <strong>Early Stopping Triggered:</strong> Halted training early at epoch{' '}
+                          <strong>{stoppedEpoch}</strong> because the validation loss did not improve for {patienceVal} consecutive epochs (best epoch was <strong>{bestEpoch}</strong>). Saved the optimal weights to the model registry.
+                        </p>
+                      ) : (
+                        <p style={{ marginTop: 2 }}>
+                          Checkpoint saved to the model registry. Open the
+                          Architecture Explorer to read what the model learned.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

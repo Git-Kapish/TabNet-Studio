@@ -51,12 +51,12 @@ export default function Home({ onNavigate }: Props): React.JSX.Element {
       {/* Page header */}
       <div className="page-header">
         <div>
-          <div className="page-eyebrow">v1.0 · 2026-07-16</div>
+          <div className="page-eyebrow">v1.0 · {new Date().toISOString().slice(0, 10)}</div>
           <h1 className="page-title">TabNet Studio</h1>
           <p className="page-subtitle">
-            A research workbench for Google Cloud AI's TabNet — train, inspect
-            decision-step attributions, compare against classical baselines, and
-            ship batch predictions from one place.
+            A PyTorch implementation of <em>TabNet: Attentive Interpretable Tabular Learning</em> (Arik &amp; Pfister, 2019) —
+            built from the paper's architecture to explore sequential attention, sparse feature selection,
+            and interpretability in deep tabular models.
           </p>
         </div>
         <div className="page-actions">
@@ -255,7 +255,7 @@ export default function Home({ onNavigate }: Props): React.JSX.Element {
             cta="View on GitHub"
             onClick={() =>
               window.open(
-                'https://github.com/google-research/google-research/tree/master/tabnet',
+                'https://github.com/Git-Kapish/TabNet-Studio',
                 '_blank'
               )
             }
@@ -279,10 +279,8 @@ export default function Home({ onNavigate }: Props): React.JSX.Element {
         }}
       >
         <span>
-          <Cpu size={11} strokeWidth={1.75} style={{ verticalAlign: -1 }} /> TabNet · Arik &
-          Pfister, 2019 · implemented in PyTorch
+          <Cpu size={11} strokeWidth={1.75} style={{ verticalAlign: -1 }} /> TabNet Studio · Kapish Yadav
         </span>
-        <span>build · {new Date().getFullYear()}-07-16 · commit local</span>
       </footer>
     </div>
   );

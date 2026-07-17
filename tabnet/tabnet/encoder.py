@@ -4,12 +4,24 @@ from typing import List, Tuple
 from tabnet.feature_transformer import SharedFeatureTransformer, FeatureTransformer
 from tabnet.attentive_transformer import AttentiveTransformer
 
+
 class TabNetEncoder(nn.Module):
     """
-    TabNet Encoder module.
-    Runs the sequential decision steps using attentive transformers for feature selection
-    and feature transformers for representation learning.
+    TabNet sequential decision-step encoder.
+
+    Runs N_steps decision steps.  At each step i the encoder:
+      1. Generates a sparse feature selection mask M[i] (Eq. 2)
+      2. Applies the mask to the BN-normalised input: masked_x = M[i] ⊙ f  (Eq. 3)
+      3. Passes masked_x through the step-specific Feature Transformer         (Eq. 4)
+      4. Splits the output into decision representation d[i] and context a[i]
+      5. Updates the prior scale:  P[i] = P[i-1] · (γ − M[i])               (Eq. 5)
+
+    The prior scale (Eq. 5) discourages repeated selection of the same feature
+    across steps — γ controls the relaxation of this penalty.
+
+    Reference: Arik & Pfister (2019), §3.1 "Sequential Attention", Eqs. 2–5.
     """
+
     def __init__(
         self,
         input_dim: int,
@@ -24,25 +36,26 @@ class TabNetEncoder(nn.Module):
     ):
         """
         Args:
-            input_dim: Dimensionality of input features (after tabular embedding).
-            n_d: Dimension of the decision representation.
-            n_a: Dimension of the attentive transformer feedback context.
-            n_steps: Number of decision steps (N_steps).
-            gamma: Relaxation parameter for prior scale updates.
-            n_shared: Number of shared layers in the feature transformer block.
-            n_dependent: Number of step-dependent layers in the feature transformer block.
-            virtual_batch_size: Virtual batch size for Ghost BatchNorm.
-            momentum: Momentum for standard and Ghost BatchNorm layers.
+            input_dim         : Dimensionality of the BN-normalised input features.
+            n_d               : Width of the decision representation d[i]  (N_d, §3.1).
+            n_a               : Width of the attentive context a[i]        (N_a, §3.1).
+            n_steps           : Number of sequential decision steps         (N_steps, §3.1).
+            gamma             : Relaxation factor γ for prior scale updates (Eq. 5).
+                                γ=1 forces strict non-overlap; γ→∞ allows free reuse.
+            n_shared          : Number of shared GLU layers in Feature Transformer (§3.1).
+            n_dependent       : Number of step-specific GLU layers per step (§3.1).
+            virtual_batch_size: Virtual sub-batch size for Ghost BatchNorm  (§3.1).
+            momentum          : BN momentum (paper default 0.02).
         """
         super(TabNetEncoder, self).__init__()
-        
+
         self.input_dim = input_dim
         self.n_d = n_d
         self.n_a = n_a
         self.n_steps = n_steps
         self.gamma = gamma
-        
-        # Instantiate the shared feature transformer block
+
+        # Shared Feature Transformer layers — weights shared across all steps (§3.1)
         self.shared_part = SharedFeatureTransformer(
             input_dim=input_dim,
             output_dim=n_d + n_a,
@@ -50,8 +63,8 @@ class TabNetEncoder(nn.Module):
             virtual_batch_size=virtual_batch_size,
             momentum=momentum
         ) if n_shared > 0 else None
-        
-        # List of step-specific feature transformers (each uses the shared_part under the hood)
+
+        # One Feature Transformer per step (step-dependent layers + shared part)
         self.feature_transformers = nn.ModuleList([
             FeatureTransformer(
                 input_dim=input_dim,
@@ -63,8 +76,8 @@ class TabNetEncoder(nn.Module):
             )
             for _ in range(n_steps)
         ])
-        
-        # List of step-specific attentive transformers
+
+        # One Attentive Transformer per step (§3.1, Eq. 2)
         self.attentive_transformers = nn.ModuleList([
             AttentiveTransformer(
                 input_dim=input_dim,
@@ -76,40 +89,42 @@ class TabNetEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
+        Run all N_steps sequential decision steps.
+
         Args:
-            x: Input feature tensor of shape (batch_size, input_dim)
+            x : BN-normalised input features, shape (B, input_dim).
+
         Returns:
-            step_masks: List of feature selection masks for each step, each of shape (batch_size, input_dim)
-            decision_outputs: List of decision representation tensors for each step, each of shape (batch_size, n_d)
+            step_masks       : List of N_steps sparse masks M[i], each (B, input_dim).
+            decision_outputs : List of N_steps decision tensors d[i], each (B, n_d).
         """
         batch_size = x.size(0)
-        
-        # Initialize prior scales P[0] to all ones: shape (batch_size, input_dim)
+
+        # P[0] = 1  (Eq. 5 initialisation — every feature equally available)
         prior_scales = torch.ones((batch_size, self.input_dim), device=x.device, dtype=x.dtype)
-        
-        # Initialize attentive context a[0] to all zeros: shape (batch_size, n_a)
+
+        # a[0] = 0  (no prior context at the first step, §3.1)
         a = torch.zeros((batch_size, self.n_a), device=x.device, dtype=x.dtype)
-        
-        step_masks = []
-        decision_outputs = []
-        
+
+        step_masks: List[torch.Tensor] = []
+        decision_outputs: List[torch.Tensor] = []
+
         for i in range(self.n_steps):
-            # 1. Get feature selection mask M[i] using context from the previous step
+            # Eq. 2 — Attentive mask using prior context and prior scales
             mask = self.attentive_transformers[i](a, prior_scales)
             step_masks.append(mask)
-            
-            # 2. Apply the attention mask to input features (multiplicative selection)
+
+            # Eq. 3 — Masked feature input: M[i] ⊙ f
             x_masked = mask * x
-            
-            # 3. Pass masked features through the feature transformer
+
+            # Eq. 4 — Feature Transformer (shared + step-dependent GLU layers)
             out = self.feature_transformers[i](x_masked)
-            
-            # 4. Split output into decision output d[i] and context a[i]
+
+            # Split into decision representation d[i] and next-step context a[i]
             d, a = torch.split(out, [self.n_d, self.n_a], dim=-1)
             decision_outputs.append(d)
-            
-            # 5. Update prior scales for the next step
-            # P[i] = P[i-1] * (gamma - M[i])
+
+            # Eq. 5 — Prior scale update: P[i] = P[i-1] · (γ − M[i])
             prior_scales = prior_scales * (self.gamma - mask)
-            
+
         return step_masks, decision_outputs
