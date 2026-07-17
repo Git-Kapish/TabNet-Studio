@@ -1,5 +1,7 @@
 # TabNet Studio
 
+[![CI/CD](https://github.com/Git-Kapish/TabNet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/Git-Kapish/TabNet-Studio/actions/workflows/ci.yml)
+
 A from-scratch PyTorch implementation of **TabNet: Attentive Interpretable Tabular Learning** (Arik & Pfister, 2019), built as a personal deep-dive into the paper's architecture — coupled with a full research workbench for training, visualising attention, benchmarking, and deploying batch predictions.
 
 > **Paper:** S. Ö. Arik and T. Pfister, "TabNet: Attentive Interpretable Tabular Learning," *AAAI*, 2021. [`arXiv:1908.07442`](https://arxiv.org/abs/1908.07442)
