@@ -31,12 +31,12 @@ This is **not** a wrapper around an existing library. Every component is impleme
 
 Classification performance, execution metrics, and storage footprints benchmarked on the **Adult Census Income** dataset ($N = 32,561$ rows, 14 features):
 
-| Model | Accuracy | F1-Score | ROC-AUC | Training Time | Inference Latency (Batch) | Model Size |
+| Model | Accuracy | F1-Score | Training Time | Inference Latency (Batch) | Model Size |
 |---|---|---|---|---|---|---|
-| **XGBoost** | **87.16%** | **0.7108** | *TODO* | 0.33s | 24.21 ms | 326 KB |
-| **Random Forest** | 85.56% | 0.6684 | *TODO* | 0.72s | 68.77 ms | 91.4 MB |
-| **Logistic Regression** | 84.94% | 0.6548 | *TODO* | 0.86s | 22.28 ms | 8.1 KB |
-| **TabNet (PyTorch)** | 84.14% | 0.5920 | *TODO* | 31.86s | 151.45 ms | 532 KB |
+| **XGBoost** | **87.16%** | **0.7108** | 0.33s | 24.21 ms | 326 KB |
+| **Random Forest** | 85.56% | 0.6684 | 0.72s | 68.77 ms | 91.4 MB |
+| **Logistic Regression** | 84.94% | 0.6548 | 0.86s | 22.28 ms | 8.1 KB |
+| **TabNet (PyTorch)** | 84.14% | 0.5920 | 31.86s | 151.45 ms | 532 KB |
 
 > **Key Takeaway:** While tree ensembles (XGBoost/Random Forest) train faster on CPUs, TabNet produces instance-wise Sparsemax selection masks $M[i]$ (Eq. 2) that provide step-by-step feature attribution that tree ensembles cannot natively offer.
 
@@ -46,7 +46,7 @@ Classification performance, execution metrics, and storage footprints benchmarke
 
 Below is the computational pipeline of the TabNet forward pass, annotated with paper equation numbers:
 
-![TabNet Architecture Deep Dive](assets/tabnet_architecture.svg)
+![TabNet Architecture Deep Dive](assets/tabnet_architecture.png)
 
 ### Key Sequential Attention Mechanics
 1. **Attentive Transformer (Eq. 2):** Generates sparse selection mask $M[i] = \text{sparsemax}(P[i-1] \odot h_i(a[i-1]))$ using prior context $a[i-1]$.
@@ -65,16 +65,7 @@ Below is the computational pipeline of the TabNet forward pass, annotated with p
 
 ## System Architecture
 
-![System Architecture](assets/system_architecture.svg)
-
-```mermaid
-graph LR
-    Browser([Browser Client]) -->|React 18 + Vite| Frontend[Frontend]
-    Frontend -->|REST API| Backend[FastAPI Backend]
-    Backend -->|PyTorch API| Engine[TabNet Engine]
-    Engine -->|Train / Infer| Data[(CSV Storage)]
-    Engine -->|Benchmarks| Baselines[XGBoost / Sklearn]
-```
+![System Architecture](assets/system_architecture.png)
 
 ---
 
