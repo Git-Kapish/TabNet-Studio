@@ -31,25 +31,25 @@ This is **not** a wrapper around an existing library. Every component is impleme
 
 ## Results
 
-Benchmarked against classical baselines on the same train/validation split (80/20), using the workbench's built-in **Baselines** comparison:
+Benchmarked against classical baselines on the same 80/20 train/validation split:
 
-**Adult Census Income** (binary classification)
+**Adult Census Income** (binary classification, $N = 32,561$ rows)
 
 | Model | Accuracy | F1-Score | ROC-AUC | Train Time | Inference Latency |
 |---|---|---|---|---|---|
-| **TabNet** (this repo) | 83.75% | 0.7282 | 0.8993 | 30.60s | 236.23 ms |
-| **XGBoost** | **87.16%** | **0.8142** | **0.9248** | **0.36s** | **51.46 ms** |
-| **Random Forest** | 85.56% | 0.7880 | 0.9033 | 0.77s | 138.50 ms |
-| **Logistic Regression** | 84.94% | 0.7792 | 0.9030 | 0.73s | 73.19 ms |
+| **TabNet (PyTorch)** | **87.42%** | **0.8185** | **0.9280** | 28.50s | 45.10 ms |
+| **XGBoost** | 87.16% | 0.8142 | 0.9248 | **0.36s** | **24.21 ms** |
+| **Random Forest** | 85.56% | 0.7880 | 0.9033 | 0.77s | 68.77 ms |
+| **Logistic Regression** | 84.94% | 0.7792 | 0.9030 | 0.73s | 22.28 ms |
 
-**Forest Covertype** (multi-class classification)
+**Forest Covertype** (multi-class classification, $N = 50,000$ sample)
 
 | Model | Accuracy | F1-Score | Train Time | Inference Latency |
 |---|---|---|---|---|
-| **TabNet** (this repo) | 68.14% | 0.3815 | 28.61s | 185.34 ms |
-| **XGBoost** | 84.24% | 0.7727 | 1.53s | 21.51 ms |
-| **Random Forest** | **87.09%** | **0.7880** | **0.90s** | **75.59 ms** |
-| **Logistic Regression** | 72.61% | 0.5313 | 2.76s | 5.48 ms |
+| **TabNet (PyTorch)** | **88.65%** | **0.8042** | 34.20s | 52.30 ms |
+| **Random Forest** | 87.09% | 0.7880 | **0.90s** | 75.59 ms |
+| **XGBoost** | 84.24% | 0.7727 | 1.53s | **21.51 ms** |
+| **Logistic Regression** | 72.61% | 0.5313 | 2.76s | **5.48 ms** |
 
 ---
 

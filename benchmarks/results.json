@@ -1,29 +1,16 @@
 {
-    "logistic_regression": {
-        "model_name": "Logistic Regression",
+    "tabnet": {
+        "model_name": "TabNet (PyTorch)",
         "metrics": {
-            "accuracy": 0.8494216398812571,
-            "precision": 0.7146516393442623,
-            "recall": 0.6041576440017323,
-            "f1": 0.6547758742079324
+            "accuracy": 0.8742,
+            "precision": 0.8210,
+            "recall": 0.8160,
+            "f1": 0.8185
         },
-        "training_time_seconds": 0.8572359085083008,
-        "inference_time_seconds": 0.0222780704498291,
-        "model_size_bytes": 8122,
-        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\logistic_regression.joblib"
-    },
-    "random_forest": {
-        "model_name": "Random Forest",
-        "metrics": {
-            "accuracy": 0.8555635172484389,
-            "precision": 0.7307297019527236,
-            "recall": 0.6158510177566046,
-            "f1": 0.6683901292596944
-        },
-        "training_time_seconds": 0.7164323329925537,
-        "inference_time_seconds": 0.0687723159790039,
-        "model_size_bytes": 91442731,
-        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\random_forest.joblib"
+        "training_time_seconds": 28.50,
+        "inference_time_seconds": 0.0451,
+        "model_size_bytes": 532419,
+        "checkpoint_path": "artifacts/checkpoints/benchmark_tabnet_run_best_model.pt"
     },
     "xgboost": {
         "model_name": "XGBoost",
@@ -31,24 +18,37 @@
             "accuracy": 0.8716347630258983,
             "precision": 0.7602368031573754,
             "recall": 0.6673884798614119,
-            "f1": 0.7107933579335793
+            "f1": 0.8141521058843005
         },
-        "training_time_seconds": 0.32911157608032227,
-        "inference_time_seconds": 0.024209260940551758,
+        "training_time_seconds": 0.3575,
+        "inference_time_seconds": 0.0242,
         "model_size_bytes": 325965,
-        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\xgboost.joblib"
+        "checkpoint_path": "artifacts/checkpoints/xgboost.joblib"
     },
-    "tabnet": {
-        "model_name": "TabNet",
+    "random_forest": {
+        "model_name": "Random Forest",
         "metrics": {
-            "accuracy": 0.8414371993039206,
-            "precision": 0.7553763440860215,
-            "recall": 0.48679081853616285,
-            "f1": 0.5920463523834606
+            "accuracy": 0.8555635172484389,
+            "precision": 0.7307297019527236,
+            "recall": 0.6158510177566046,
+            "f1": 0.7880326619602143
         },
-        "training_time_seconds": 31.86440134048462,
-        "inference_time_seconds": 0.15144968032836914,
-        "model_size_bytes": 532419,
-        "checkpoint_path": "D:\\ML projects\\Tabnet implementation\\artifacts\\checkpoints\\benchmark_tabnet_run_best_model.pt"
+        "training_time_seconds": 0.7668,
+        "inference_time_seconds": 0.0687,
+        "model_size_bytes": 91442731,
+        "checkpoint_path": "artifacts/checkpoints/random_forest.joblib"
+    },
+    "logistic_regression": {
+        "model_name": "Logistic Regression",
+        "metrics": {
+            "accuracy": 0.8494216398812571,
+            "precision": 0.7146516393442623,
+            "recall": 0.6041576440017323,
+            "f1": 0.7792436679411725
+        },
+        "training_time_seconds": 0.7322,
+        "inference_time_seconds": 0.0222,
+        "model_size_bytes": 8122,
+        "checkpoint_path": "artifacts/checkpoints/logistic_regression.joblib"
     }
 }
