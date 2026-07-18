@@ -1,6 +1,8 @@
 # TabNet Studio
 
 [![CI/CD](https://github.com/Git-Kapish/TabNet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/Git-Kapish/TabNet-Studio/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-tab--net--studio.vercel.app-f59e0b?style=for-the-badge&logo=vercel)](https://tab-net-studio.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A from-scratch PyTorch implementation of **TabNet: Attentive Interpretable Tabular Learning** (Arik & Pfister, 2019), built as a personal deep-dive into the paper's architecture — coupled with a full research workbench for training, visualising attention, benchmarking, and deploying batch predictions.
 
@@ -14,27 +16,73 @@ This is **not** a wrapper around an existing library. Every component is impleme
 
 | Component | Paper Reference | File |
 |---|---|---|
-| Sparsemax activation | §3.1, Martins & Astudillo (2016) | `tabnet/layers.py` |
-| Ghost Batch Normalisation | §3.1, Hoffer et al. (2017) | `tabnet/layers.py` |
-| GLU Block | §3.1, Eq. 6 | `tabnet/feature_transformer.py` |
-| Attentive Transformer | §3.1, Eq. 2 | `tabnet/attentive_transformer.py` |
-| Prior Scale Update | §3.1, Eq. 5 | `tabnet/encoder.py` |
-| Decision Aggregation | §3.2, Eq. 7 | `tabnet/model.py` |
-| Sparsity Regularisation | §3.4, Eq. 9 | `tabnet/losses.py` |
-| Feature Attribution | §3.3, Eq. 8 | `tabnet/interpretability.py` |
+| Sparsemax activation | §3.1, Martins & Astudillo (2016) | [`tabnet/layers.py`](tabnet/tabnet/layers.py) |
+| Ghost Batch Normalisation | §3.1, Hoffer et al. (2017) | [`tabnet/layers.py`](tabnet/tabnet/layers.py) |
+| GLU Block | §3.1, Eq. 6 | [`tabnet/feature_transformer.py`](tabnet/tabnet/feature_transformer.py) |
+| Attentive Transformer | §3.1, Eq. 2 | [`tabnet/attentive_transformer.py`](tabnet/tabnet/attentive_transformer.py) |
+| Prior Scale Update | §3.1, Eq. 5 | [`tabnet/encoder.py`](tabnet/tabnet/encoder.py) |
+| Decision Aggregation | §3.2, Eq. 7 | [`tabnet/model.py`](tabnet/tabnet/model.py) |
+| Sparsity Regularisation | §3.4, Eq. 9 | [`tabnet/losses.py`](tabnet/tabnet/losses.py) |
+| Feature Attribution | §3.3, Eq. 8 | [`tabnet/interpretability.py`](tabnet/tabnet/interpretability.py) |
+
+---
+
+## Results
+
+Classification performance, execution metrics, and storage footprints benchmarked on the **Adult Census Income** dataset ($N = 32,561$ rows, 14 features):
+
+| Model | Accuracy | F1-Score | ROC-AUC | Training Time | Inference Latency (Batch) | Model Size |
+|---|---|---|---|---|---|---|
+| **XGBoost** | **87.16%** | **0.7108** | *TODO* | 0.33s | 24.21 ms | 326 KB |
+| **Random Forest** | 85.56% | 0.6684 | *TODO* | 0.72s | 68.77 ms | 91.4 MB |
+| **Logistic Regression** | 84.94% | 0.6548 | *TODO* | 0.86s | 22.28 ms | 8.1 KB |
+| **TabNet (PyTorch)** | 84.14% | 0.5920 | *TODO* | 31.86s | 151.45 ms | 532 KB |
+
+> **Key Takeaway:** While tree ensembles (XGBoost/Random Forest) train faster on CPUs, TabNet produces instance-wise Sparsemax selection masks $M[i]$ (Eq. 2) that provide step-by-step feature attribution that tree ensembles cannot natively offer.
+
+---
+
+## Architecture Deep Dive
+
+Below is the computational pipeline of the TabNet forward pass, annotated with paper equation numbers:
+
+![TabNet Architecture Deep Dive](assets/tabnet_architecture.svg)
+
+### Key Sequential Attention Mechanics
+1. **Attentive Transformer (Eq. 2):** Generates sparse selection mask $M[i] = \text{sparsemax}(P[i-1] \odot h_i(a[i-1]))$ using prior context $a[i-1]$.
+2. **Masking (Eq. 3):** Multiplies input features by $M[i]$ so only selected attributes pass to representation learning.
+3. **Feature Transformer (Eq. 6):** Processes masked features through 2 shared and 2 step-dependent GLU blocks with $\sqrt{0.5}$ residual scaling.
+4. **Prior Scale Update (Eq. 5):** Updates usage scales $P[i] = P[i-1] \odot (\gamma - M[i])$ to penalise re-using features across steps.
+5. **Decision Aggregation (Eq. 7):** Aggregates decision representations $d_{\text{out}} = \sum_{i=1}^{N_{\text{steps}}} \text{ReLU}(d[i])$ before final linear mapping.
+
+---
+
+## Application Preview
+
+![TabNet Studio Application Preview](assets/home_view.png)
 
 ---
 
 ## System Architecture
 
+![System Architecture](assets/system_architecture.svg)
+
 ```mermaid
-graph TD
-    User([Browser]) -->|React + TypeScript| Frontend[Frontend: Vite]
-    Frontend -->|REST API| Backend[Backend: FastAPI]
-    Backend -->|PyTorch| Engine[TabNet Engine]
+graph LR
+    Browser([Browser Client]) -->|React 18 + Vite| Frontend[Frontend]
+    Frontend -->|REST API| Backend[FastAPI Backend]
+    Backend -->|PyTorch API| Engine[TabNet Engine]
     Engine -->|Train / Infer| Data[(CSV Storage)]
     Engine -->|Benchmarks| Baselines[XGBoost / Sklearn]
 ```
+
+---
+
+## Notable Implementation Details
+
+* **Sparsemax Autograd Numerical Stability:** In [`tabnet/layers.py`](tabnet/tabnet/layers.py), `SparsemaxFunction` translates input tensors by their row-wise max (`input - max(input)`) prior to sorting and thresholding. The backward pass strictly computes gradients over the active support set $S(z) = \{j : \text{sparsemax}(z)_j > 0\}$, preventing zero-support gradient leaks.
+* **Virtual Sub-Batch Splitting (Ghost BN):** [`GhostBatchNorm1d`](tabnet/tabnet/layers.py) splits training mini-batches into virtual sub-batches of size $B_v$ using `torch.chunk`. During inference or when mini-batch size $B \le B_v$, it falls back seamlessly to standard 1D batch normalization.
+* **Variance-Preserving Residual Connections:** Feature transformer blocks scale residual connections by $\sqrt{0.5}$ (`(x + block(x)) * sqrt(0.5)`), matching §3.1 of the paper to stabilize activation variance across deep multi-step decision layers.
 
 ---
 
@@ -57,11 +105,11 @@ TabNet-Studio/
 │       └── training.py          # Fit / validate loops
 │
 ├── backend/                     # FastAPI REST server
-│   ├── app/main.py              # All API endpoints
+│   ├── app/main.py              # API endpoints & benchmark runners
 │   ├── requirements.txt
 │   └── Dockerfile
 │
-├── frontend/                    # React + TypeScript dashboard
+├── frontend/                    # React + TypeScript client
 │   ├── src/components/
 │   │   ├── Home.tsx             # Studio overview
 │   │   ├── Train.tsx            # Live training + loss curves
@@ -72,33 +120,39 @@ TabNet-Studio/
 │   ├── src/App.tsx
 │   └── Dockerfile
 │
-├── tests/                       # PyTorch unit tests
+├── benchmarks/                  # Baseline comparison runners
+│   ├── train_baselines.py       # Scikit-Learn & XGBoost benchmark runner
+│   ├── evaluate.py              # Benchmark report formatter
+│   └── results.json             # Serialized metrics
+│
+├── tests/                       # PyTorch unit test suite
 │   ├── test_layers.py
 │   ├── test_model.py
 │   └── test_embeddings.py
 │
+├── assets/                      # Minimal vector architecture diagrams & screenshots
 ├── .github/workflows/ci.yml     # CI/CD pipeline (GitHub Actions)
-├── docker-compose.yml           # Multi-container orchestration
-├── data/raw/                    # Preloaded datasets (Adult, Covertype)
-└── artifacts/                   # Checkpoints, runs, TensorBoard logs
+└── docker-compose.yml           # Multi-container orchestration
 ```
 
 ---
 
 ## Setup & Installation
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
+### Prerequisites & Tech Stack
+- **Python:** `3.10+`
+- **PyTorch:** `2.x`
+- **FastAPI:** `0.110+`
+- **Node.js:** `18+` (React 18, Vite 5, Recharts 2)
 
-### Option A — Docker (recommended)
+### Option A — Docker (Recommended)
 
 ```bash
 docker compose up --build
 ```
 
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:8000`
+- **Frontend Dashboard:** `http://localhost:5173`
+- **Backend API Docs:** `http://localhost:8000/docs`
 
 ### Option B — Local Development
 
@@ -136,29 +190,17 @@ Defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ---
 
-## Workbench Features
+## Running Unit Tests
 
-### Playground
-Configure hyperparameters (N_steps, N_d, N_a, γ, λ_sparse, learning rate, batch size, patience) and start training. Epoch-level loss and accuracy curves update live.
-
-### Baselines
-Automatically benchmarks TabNet against Logistic Regression, Random Forest, and XGBoost on the same dataset. Compare accuracy, F1, training time, inference latency, and checkpoint size.
-
-### Architecture Explorer
-Select any trained run and any validation sample. Visualises:
-- The full forward-pass pipeline (Input BN → Attentive Transformer → Feature Transformer → Aggregation)
-- Step-by-step Sparsemax attention heatmaps showing which features were selected at each decision step
-
-### Predictions
-Upload a test CSV, select a model, and run batch inference. Download the augmented CSV with predicted labels and class confidence scores.
+```bash
+pytest tests/ -v
+```
 
 ---
 
-## Running Tests
+## License
 
-```bash
-pytest tests/
-```
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
